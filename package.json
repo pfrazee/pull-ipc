@@ -1,0 +1,32 @@
+{
+  "name": "pull-ipc",
+  "version": "0.0.1",
+  "description": "pull-stream wrapper around electron's ipc channel",
+  "main": "index.js",
+  "scripts": {
+    "test": "electron --v=-1 test/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pfraze/pull-ipc.git"
+  },
+  "keywords": [
+    "pull",
+    "stream",
+    "electron",
+    "ipc"
+  ],
+  "author": "Paul Frazee <pfrazee@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/pfraze/pull-ipc/issues"
+  },
+  "homepage": "https://github.com/pfraze/pull-ipc#readme",
+  "dependencies": {
+    "pull-pushable": "^1.1.4",
+    "pull-stream": "^2.27.0"
+  },
+  "devDependencies": {
+    "electron-tape": "~1.0.0"
+  }
+}
