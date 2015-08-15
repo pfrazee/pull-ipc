@@ -9,7 +9,7 @@ function once (fn) {
   }
 }
 
-module.exports = function (ipc, window, _done) {
+module.exports = function (channelName, ipc, window, _done) {
   var buffer = [], ended = false, waiting
   var onincomingHandler
 
@@ -20,7 +20,8 @@ module.exports = function (ipc, window, _done) {
   }
 
   var done = once(function (err, v) {
-    ipc.removeListener('pull-ipc', onincomingHandler)
+    ended = err || true
+    ipc.removeListener(channelName, onincomingHandler)
     _done && _done(err, v)
 
     // deallocate
@@ -63,8 +64,8 @@ module.exports = function (ipc, window, _done) {
       msg.bvalue = msg.value.toString('base64')
       delete msg.value
     }
-    if (window) window.webContents.send('pull-ipc', JSON.stringify(msg))
-    else        ipc.send('pull-ipc', JSON.stringify(msg))
+    if (window) window.webContents.send(channelName, JSON.stringify(msg))
+    else        ipc.send(channelName, JSON.stringify(msg))
   }
 
   // handle incoming messages
@@ -73,7 +74,7 @@ module.exports = function (ipc, window, _done) {
       if (e.sender !== window.webContents) return
       onincoming(msg)
     }) : onincoming
-  ipc.on('pull-ipc', onincomingHandler)
+  ipc.on(channelName, onincomingHandler)
 
   // return source/sink
   return {
