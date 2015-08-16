@@ -32,6 +32,7 @@ module.exports = function (channelName, ipc, window, _done) {
 
   // incoming msg handler
   function onincoming (msg) {
+    // console.log('in', channelName, msg)
     // parse if needed
     try {
       if (typeof msg == 'string')
@@ -59,6 +60,7 @@ module.exports = function (channelName, ipc, window, _done) {
 
   // outgoing msg handler
   function onoutgoing (msg) { 
+    // console.log('out', channelName, msg)
     if (msg.value && Buffer.isBuffer(msg.value)) {
       // convert buffers to base64
       msg.bvalue = msg.value.toString('base64')

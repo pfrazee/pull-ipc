@@ -27,6 +27,7 @@
     "pull-stream": "^2.27.0"
   },
   "devDependencies": {
+    "muxrpc": "^6.1.1",
     "electron-tape": "~1.0.0"
   }
 }
