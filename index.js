@@ -120,3 +120,43 @@ module.exports = function (channelName, ipc, window, _done) {
 
   return setup(ipc, _done, send, listen, unlisten)
 }
+
+module.exports.webview = function (channelName, ipc, webview, _done) {
+  var send, listen, unlisten, listener
+
+  // handle (ipc, _done) call signature
+  if (typeof webview == 'function' && !_done) {
+    // inside webview
+    _done = webview
+    webview = null
+
+    send = function (msg) {
+      ipc.sendToHost(channelName, JSON.stringify(msg))
+    }
+    listen = function (cb) {
+      listener = cb
+      ipc.on(channelName, cb)
+    }
+    unlisten = function (cb) {
+      ipc.removeListener(channelName, listener)
+      listener = null
+    }
+  } else {
+    // inside main thread
+    send = function (msg) {
+      webview.send(channelName, JSON.stringify(msg))
+    }
+    listen = function (cb) {
+      webview.addEventListener('ipc-message', (listener = function (event) {
+        if (event.channel !== channelName) return
+        cb(event.args[0])
+      }))
+    }
+    unlisten = function (cb) {
+      webview.removeEventListener('ipc-message', listener)
+      listener = null
+    }
+  }
+
+  return setup(ipc, _done, send, listen, unlisten)  
+}
