@@ -9,30 +9,23 @@ function once (fn) {
   }
 }
 
-module.exports = function (channelName, ipc, window, _done) {
+function setup (ipc, _done, send, listen, unlisten) {
   var buffer = [], ended = false, waiting
   var onincomingHandler
 
-  // handle (ipc, _done) call signature
-  if (typeof window == 'function' && !_done) {
-    _done = window
-    window = null
-  }
-
   var done = once(function (err, v) {
     ended = err || true
-    ipc.removeListener(channelName, onincomingHandler)
+    unlisten()
     _done && _done(err, v)
 
     // deallocate
     _done = null
-    window = null
     waiting = null
   })
 
   // incoming msg handler
-  function onincoming (msg) {
-    // console.log('in', channelName, msg)
+  listen(function onincoming (msg) {
+    // console.log('in', msg)
     // parse if needed
     try {
       if (typeof msg == 'string')
@@ -56,27 +49,18 @@ module.exports = function (channelName, ipc, window, _done) {
     }
     else if (!ended)
       buffer.push(msg)
-  }
+  })
 
   // outgoing msg handler
   function onoutgoing (msg) { 
-    // console.log('out', channelName, msg)
+    // console.log('out', msg)
     if (msg.value && Buffer.isBuffer(msg.value)) {
       // convert buffers to base64
       msg.bvalue = msg.value.toString('base64')
       delete msg.value
     }
-    if (window) window.webContents.send(channelName, JSON.stringify(msg))
-    else        ipc.send(channelName, JSON.stringify(msg))
+    send(msg)
   }
-
-  // handle incoming messages
-  onincomingHandler = (window) ?
-    (function (e, msg) {
-      if (e.sender !== window.webContents) return
-      onincoming(msg)
-    }) : onincoming
-  ipc.on(channelName, onincomingHandler)
 
   // return source/sink
   return {
@@ -99,4 +83,40 @@ module.exports = function (channelName, ipc, window, _done) {
       (read)
     }
   }
+}
+
+module.exports = function (channelName, ipc, window, _done) {
+  var send, listen, listener
+
+  // handle (ipc, _done) call signature
+  if (typeof window == 'function' && !_done) {
+    // inside renderer
+    _done = window
+    window = null
+
+    send = function (msg) {
+      ipc.send(channelName, JSON.stringify(msg))
+    }
+    listen = function (cb) {
+      listener = cb
+      ipc.on(channelName, cb)
+    }
+  } else {
+    // inside main thread
+    send = function (msg) {
+      window.webContents.send(channelName, JSON.stringify(msg))
+    }
+    listen = function (cb) {
+      ipc.on(channelName, (listener = function (e, msg) {
+        if (e.sender !== window.webContents) return
+        cb(msg)
+      }))
+    }
+  }
+  var unlisten = function (cb) {
+    ipc.removeListener(channelName, listener)
+    listener = null
+  }
+
+  return setup(ipc, _done, send, listen, unlisten)
 }
